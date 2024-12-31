@@ -1,164 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title>
-            {{ config('app.name') }}
-        </title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta charset="UTF-8">
-        <!-- External CSS libraries -->
-        <link type="text/css" rel="stylesheet" href="{{ asset('assets/invoice/css/bootstrap.min.css') }}">
-        <link type="text/css" rel="stylesheet" href="{{ asset('assets/invoice/fonts/font-awesome/css/font-awesome.min.css') }}">
-        <!-- Google fonts -->
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-        <!-- Custom Stylesheet -->
-        <link type="text/css" rel="stylesheet" href="{{ asset('assets/invoice/css/style.css') }}">
-    </head>
-    <body>
-        <div class="invoice-16 invoice-content">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="invoice-inner-9" id="invoice_wrapper">
-                            <div class="invoice-top">
-                                <div class="row">
-                                    <div class="col-lg-6 col-sm-6">
-                                        <div class="logo">
-                                            <h1>Name Store</h1>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6 col-sm-6">
-                                        <div class="invoice">
-                                            <h1>
-                                                Invoice # <span>{{ $order->invoice_no }}</span>
-                                            </h1>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="invoice-info">
-                                <div class="row">
-                                    <div class="col-sm-6 mb-50">
-                                        <div class="invoice-number">
-                                            <h4 class="inv-title-1">
-                                                Invoice date:
-                                            </h4>
-                                            <p class="invo-addr-1">
-                                                {{ $order->order_date }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-6 mb-50">
-                                        <h4 class="inv-title-1">Customer</h4>
-                                        <p class="inv-from-1">{{ $order->customer->name }}</p>
-                                        <p class="inv-from-1">{{ $order->customer->phone }}</p>
-                                        <p class="inv-from-1">{{ $order->customer->email }}</p>
-                                        <p class="inv-from-2">{{ $order->customer->address }}</p>
-                                    </div>
-                                    <div class="col-sm-6 text-end mb-50">
-                                        <h4 class="inv-title-1">Store</h4>
-                                        <p class="inv-from-1">Name Store</p>
-                                        <p class="inv-from-1">(+62) 123 123 123</p>
-                                        <p class="inv-from-1">email@example.com</p>
-                                        <p class="inv-from-2">Cirebon, Jawa Barat, Indonesia</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="order-summary">
-                                <div class="table-outer">
-                                    <table class="default-table invoice-table">
-                                        <thead>
-                                            <tr>
-                                                <th class="align-middle">Item</th>
-                                                <th class="align-middle text-center">Price</th>
-                                                <th class="align-middle text-center">Quantity</th>
-                                                <th class="align-middle text-center">Subtotal</th>
-                                            </tr>
-                                        </thead>
+<head>
+    <title>Nopal Hardware-Receipt</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: "DejaVu Sans Mono", "Courier New", Courier, monospace;
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .receipt-container {
+            width: 320px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .header, .footer {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 1rem;
+            margin: 0;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 2px 0;
+        }
+        .info {
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+        .info p {
+            margin: 0;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        .table th, .table td {
+            text-align: left;
+            padding: 5px 0;
+        }
+        .table th {
+            border-bottom: 1px solid #000;
+            font-weight: bold;
+        }
+        .table td {
+            text-align: right;
+        }
+        .table td:first-child {
+            text-align: left;
+        }
+        .totals {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        .totals p {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+        }
+        .footer {
+            border-top: 1px dashed #000;
+            padding-top: 5px;
+            font-size: 0.8rem;
+        }
+        .footer .delivery-message {
+            margin-top: 10px;
+            border-top: 1px solid #000;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body onload="handlePrintAndRedirect()">
+    <div class="receipt-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Nopal Hardware</h1>
+            <p>P.O Box 7, KUTUS</p>
+            <p>0735039809</p>
+        </div>
 
-                                        <tbody>
-{{--                                            @foreach ($orderDetails as $item)--}}
-                                            @foreach ($order->details as $item)
-                                            <tr>
-                                                <td class="align-middle">
-                                                    {{ $item->product->name }}
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    {{ Number::currency($item->unitcost, 'KSH.') }}
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    {{ $item->quantity }}
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    {{ Number::currency($item->total, 'KSH.') }}
-                                                </td>
-                                            </tr>
-                                            @endforeach
+        <!-- Receipt Info -->
+        <div class="info">
+            <p>Receipt No.: <strong>{{ $order->invoice_no }}</strong></p>
+            <p>Date: <strong>{{ $order->created_at->format('d-M-y') }} Time: {{ $order->created_at->format('h:i A') }}</strong></p>
+            <p>Day: <strong>{{ $order->created_at->format('l') }}</strong></p>
+            <p>Customer Name: <strong>{{ $order->customer->name }}</strong></p>
+            <p>Seller: <strong>{{ auth()->user()->name }}</strong></p>
+            <p>Mode of Payment: <strong>{{ $order->payment_type }}</strong></p>
+        </div>
 
-                                            <tr>
-                                                <td colspan="3" class="text-end">
-                                                    <strong>
-                                                        Subtotal
-                                                    </strong>
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <strong>
-                                                        {{ Number::currency($order->sub_total, 'KSH.') }}
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="3" class="text-end">
-                                                    <strong>Tax</strong>
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <strong>
-                                                        {{ Number::currency($order->vat, 'KSH.') }}
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td colspan="3" class="text-end">
-                                                    <strong>Total</strong>
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <strong>
-                                                        {{ Number::currency($order->total, 'KSH.') }}
-                                                    </strong>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            {{-- <div class="invoice-informeshon-footer">
-                                <ul>
-                                    <li><a href="#">www.website.com</a></li>
-                                    <li><a href="mailto:sales@hotelempire.com">info@example.com</a></li>
-                                    <li><a href="tel:+088-01737-133959">+62 123 123 123</a></li>
-                                </ul>
-                            </div> --}}
-                        </div>
-                        <div class="invoice-btn-section clearfix d-print-none">
-                            <a href="javascript:window.print()" class="btn btn-lg btn-print">
-                                <i class="fa fa-print"></i>
-                                Print Invoice
-                            </a>
-                            <a id="invoice_download_btn" class="btn btn-lg btn-download">
-                                <i class="fa fa-download"></i>
-                                Download Invoice
-                            </a>
-                        </div>
-                    </div>
-                </div>
+        <div class="divider"></div>
+
+        <!-- Order Items -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($order->details as $item)
+                <tr>
+                    <td>{{ $item->product->name }}</td>
+                    <td>{{ $item->quantity }}</td>
+                    <td>{{ Number::currency($item->unitcost, 'KSH.') }}</td>
+                    <td>{{ Number::currency($item->total, 'KSH.') }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <div class="divider"></div>
+
+        <!-- Totals -->
+        <div class="totals">
+            <p>Items count: <strong>{{ $order->details->count() }}</strong></p>
+            <p>Subtotal: <strong>{{ Number::currency($order->sub_total, 'KSH.') }}</strong></p>
+            <p>Tax (9%): <strong>{{ Number::currency($order->vat, 'KSH.') }}</strong></p>
+            <p class="total">TOTAL: <strong>{{ Number::currency($order->total, 'KSH.') }}</strong></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Thank you for shopping with us!</p>
+            <p>Visit us again!</p>
+
+            <div class="delivery-message">
+                <p>We deliver to where you are</p>
             </div>
         </div>
-        <script src="{{ asset('assets/invoice/js/jquery.min.js') }}"></script>
-        <script src="{{ asset('assets/invoice/js/jspdf.min.js') }}"></script>
-        <script src="{{ asset('assets/invoice/js/html2canvas.js') }}"></script>
-        <script src="{{ asset('assets/invoice/js/app.js') }}"></script>
-    </body>
+    </div>
+
+    <script>
+        function handlePrintAndRedirect() {
+            window.print();
+
+            // Redirect to orders page after a short delay
+            setTimeout(() => {
+                window.location.href = "{{ route('orders.index') }}";
+            }, 1000);
+        }
+    </script>
+</body>
 </html>

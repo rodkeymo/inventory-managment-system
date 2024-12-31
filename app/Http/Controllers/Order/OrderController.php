@@ -38,47 +38,51 @@ class OrderController extends Controller
     }
 
     public function store(OrderStoreRequest $request)
-{
-    $order = Order::create($request->all());
-
-
-    if (in_array($request->payment_type, ['Mpesa', 'Bank', 'HandCash'])) {
-        $order->order_status =1;
+    {
+        $order = Order::create($request->all());
+    
+        // Set the invoice number prefix based on payment type
+        if (in_array($request->payment_type, ['Mpesa', 'Bank', 'HandCash'])) {
+            $order->order_status = 1;
+            $order->invoice_no = 'RCPT-' . str_pad($order->id, 6, '0', STR_PAD_LEFT); // Example: RCPT-000001
+        } elseif ($request->payment_type === 'Credit') {
+            $order->invoice_no = 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT); // Example: INV-000001
+        }
+    
         $order->save();
+    
+        // Create Order Details
+        $contents = Cart::instance('order')->content();
+        $oDetails = [];
+    
+        foreach ($contents as $content) {
+            $oDetails['order_id'] = $order['id'];
+            $oDetails['product_id'] = $content->id;
+            $oDetails['quantity'] = $content->qty;
+            $oDetails['unitcost'] = $content->price;
+            $oDetails['total'] = $content->subtotal;
+            $oDetails['created_at'] = Carbon::now();
+    
+            // Insert each order detail into the database
+            OrderDetails::insert($oDetails);
+    
+            // Update the product quantity after the order has been placed
+            $product = Product::find($content->id);
+            if ($product) {
+                // Reduce product stock by the ordered quantity
+                $product->quantity -= $content->qty;
+                $product->save();
+            }
+        }
+    
+        // Clear the cart after the order has been created
+        Cart::destroy();
+    
+        // Redirect to the invoice view for printing
+        return response()->view('orders.print-invoice', compact('order'))
+            ->header('Content-Type', 'text/html');
     }
-
-    // Create Order Details
-    $contents = Cart::instance('order')->content();
-    $oDetails = [];
-
-    foreach ($contents as $content) {
-        $oDetails['order_id'] = $order['id'];
-        $oDetails['product_id'] = $content->id;
-        $oDetails['quantity'] = $content->qty;
-        $oDetails['unitcost'] = $content->price;
-        $oDetails['total'] = $content->subtotal;
-        $oDetails['created_at'] = Carbon::now();
-
-        // Insert each order detail into the database
-        OrderDetails::insert($oDetails);
-
-         // Update the product quantity after the order has been placed
-         $product = Product::find($content->id);
-         if ($product) {
-             // Reduce product stock by the ordered quantity
-             $product->quantity -= $content->qty;
-             $product->save();
-         }
-    }
-
-    // Clear the cart after order has been created
-    Cart::destroy();
-
-    // Redirect with success message
-    return redirect()
-        ->route('orders.index')
-        ->with('success', 'Order has been created!');
-}
+    
 
 
     public function show(Order $order)
