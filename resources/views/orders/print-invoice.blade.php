@@ -140,6 +140,8 @@
 
             <div class="delivery-message">
                 <p>We deliver to where you are</p>
+                <br>
+                <p>Designed and developed by Rodtech: +254798416449</p>
             </div>
         </div>
     </div>
