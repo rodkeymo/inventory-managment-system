@@ -29,9 +29,9 @@
     </div>
 </div>
 
-<div class="text-center mt-3 text-gray-600">
-    <p>Don't have an account yet?
-        <a href="{{ route('register') }}" class="text-blue-500 hover:text-blue-700 focus:outline-none focus:underline" tabindex="-1">
+<div class="text-center mt-3 text-gray-600" >
+    <p class='d-none'>Don't have an account yet?
+        <a href="{{ route('register') }}" class="text-blue-500 hover:text-blue-700 focus:outline-none focus:underline" tabindex="-1" >
             Sign up
         </a>
     </p>

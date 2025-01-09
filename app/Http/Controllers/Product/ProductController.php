@@ -41,10 +41,21 @@ class ProductController extends Controller
             'units' => $units,
         ]);
     }
+    
+    
 
     public function store(StoreProductRequest $request)
     {
-        $product = Product::create($request->all());
+    try {
+        // Generate a unique code if not provided
+        $code = $request->input('code') ?? 'PC' . hexdec(uniqid());
+
+        // Merge the generated code into the request data
+        $productData = $request->all();
+        $productData['code'] = $code;
+
+        // Create the product
+        $product = Product::create($productData);
 
         /**
          * Handle upload image
@@ -62,7 +73,14 @@ class ProductController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Product has been created!');
+    } catch (\Exception $e) {
+        \Log::error('Error creating product: ' . $e->getMessage());
+        return redirect()
+            ->back()
+            ->with('error', 'An error occurred while creating the product: ' . $e->getMessage());
     }
+}
+
 
     public function show(Product $product)
     {

@@ -85,9 +85,16 @@
                             @include('inclues._sort-icon', ['field' => 'quantity'])
                         </a>
                     </th>
+                     <th scope="col" class="align-middle text-center">
+                        <a wire:click.prevent="sortBy('quantity')" href="#" role="button">
+                            {{ __('Buying price') }}
+                            @include('inclues._sort-icon', ['field' => 'buying_price'])
+                        </a>
+                    </th>
+
                     <th scope="col" class="align-middle text-center">
                         <a wire:click.prevent="sortBy('quantity')" href="#" role="button">
-                            {{ __('Price') }}
+                            {{ __('Selling price') }}
                             @include('inclues._sort-icon', ['field' => 'selling_price'])
                         </a>
                     </th>
@@ -120,6 +127,10 @@
                     <td class="align-middle text-center">
                         {{ $product->quantity }}
                     </td>
+                    <td class="align-middle text-center">
+                        {{ $product->buying_price }}
+                    </td>
+    
                     <td class="align-middle text-center">
                         {{ $product->selling_price }}
                     </td>

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Product;
 use Illuminate\Support\Str;
 use Illuminate\Foundation\Http\FormRequest;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
+use App\Models\Product;
 
 class StoreProductRequest extends FormRequest
 {
@@ -39,16 +40,35 @@ class StoreProductRequest extends FormRequest
         ];
     }
 
+    /**
+     * Prepare the data before validation.
+     *
+     * @return void
+     */
     protected function prepareForValidation(): void
     {
         $this->merge([
             'slug' => Str::slug($this->name, '-'),
-            'code' => IdGenerator::generate([
-                'table' => 'products',
-                'field' => 'code',
-                'length' => 4,
-                'prefix' => 'PC'
-            ])
+            'code' => $this->generateUniqueProductCode()
         ]);
+    }
+
+    /**
+     * Generate a unique product code.
+     *
+     * @return string
+     */
+    private function generateUniqueProductCode(): string
+    {
+        $prefix = 'PC';
+        $uniqueCode = $prefix . str_pad(mt_rand(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Check if the generated code already exists
+        while (Product::where('code', $uniqueCode)->exists()) {
+            // If it exists, regenerate the code
+            $uniqueCode = $prefix . hexdec(uniqid());
+        }
+
+        return $uniqueCode;
     }
 }

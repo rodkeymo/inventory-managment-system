@@ -8,7 +8,6 @@
         body {
             font-family: "DejaVu Sans Mono", "Courier New", Courier, monospace;
             background: #f5f5f5;
-            padding: 10px;
             margin: 0;
             font-weight: bold;
         }
@@ -129,19 +128,17 @@
         <div class="totals">
             <p>Items count: <strong>{{ $order->details->count() }}</strong></p>
             <p>Subtotal: <strong>{{ Number::currency($order->sub_total, 'KSH.') }}</strong></p>
-            <p>Tax (9%): <strong>{{ Number::currency($order->vat, 'KSH.') }}</strong></p>
-            <p class="total">TOTAL: <strong>{{ Number::currency($order->total, 'KSH.') }}</strong></p>
+            <p>Discount: <strong>KSH {{ number_format($order->discount, 2) }} </strong></p>
+            <p>Tax (0%): <strong>{{ Number::currency($order->vat, 'KSH.') }}</strong></p>
+            <p class="total">TOTAL: <strong>{{ Number::currency($order->pay, 'KSH.') }}</strong></p>
         </div>
 
         <!-- Footer -->
         <div class="footer">
-            <p>Thank you for shopping with us!</p>
+            <p>Thank you for shopping with Nopal!</p>
             <p>Visit us again!</p>
-
             <div class="delivery-message">
                 <p>We deliver to where you are</p>
-                <br>
-                <p>Designed and developed by Rodtech: +254798416449</p>
             </div>
         </div>
     </div>

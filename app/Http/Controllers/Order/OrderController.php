@@ -37,62 +37,116 @@ class OrderController extends Controller
         ]);
     }
 
-    public function store(OrderStoreRequest $request)
-    {
+public function store(OrderStoreRequest $request)
+{
+    try {
+        // Start a transaction for safety
+        DB::beginTransaction();
+
+        // Create the order
         $order = Order::create($request->all());
-    
+
         // Set the invoice number prefix based on payment type
         if (in_array($request->payment_type, ['Mpesa', 'Bank', 'HandCash'])) {
-            $order->order_status = 1;
-            $order->invoice_no = 'RCPT-' . str_pad($order->id, 6, '0', STR_PAD_LEFT); // Example: RCPT-000001
+            $order->order_status = 1; // Default status for these payment types
+            $order->invoice_no = 'RCPT-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
         } elseif ($request->payment_type === 'Credit') {
-            $order->invoice_no = 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT); // Example: INV-000001
+            $order->invoice_no = 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
         }
-    
+
+        // Check if due is not zero and update the order status
+        if ($order->due > 0) {
+            $order->order_status = 0; // Status 0 for orders with outstanding balances
+        }
+
+        // Save any additional changes to the order
         $order->save();
-    
+
         // Create Order Details
         $contents = Cart::instance('order')->content();
         $oDetails = [];
-    
+
         foreach ($contents as $content) {
-            $oDetails['order_id'] = $order['id'];
-            $oDetails['product_id'] = $content->id;
-            $oDetails['quantity'] = $content->qty;
-            $oDetails['unitcost'] = $content->price;
-            $oDetails['total'] = $content->subtotal;
-            $oDetails['created_at'] = Carbon::now();
-    
-            // Insert each order detail into the database
-            OrderDetails::insert($oDetails);
-    
+            $soldAt = $request->input("sold_at_{$content->id}");
+            $discount = (($content->price - $soldAt) / $content->price) * 100; // Discount in percentage
+
+            $oDetails[] = [
+                'order_id' => $order->id,
+                'product_id' => $content->id,
+                'quantity' => $content->qty,
+                'unitcost' => $content->price,
+                'sold_at' => $soldAt,
+                'discount_percent' => $discount,
+                'total' => $soldAt * $content->qty,
+                'created_at' => Carbon::now(),
+            ];
+
             // Update the product quantity after the order has been placed
             $product = Product::find($content->id);
             if ($product) {
-                // Reduce product stock by the ordered quantity
                 $product->quantity -= $content->qty;
                 $product->save();
             }
         }
-    
-        // Clear the cart after the order has been created
+
+        // Insert all order details at once for better performance
+        OrderDetails::insert($oDetails);
+
+        // Commit the transaction
+        DB::commit();
+
+        // Reload the order with all required data (fresh ensures related data is included)
+        $order = $order->fresh(['customer', 'details']);
+
+        // Clear the cart after everything has been successfully processed
         Cart::destroy();
-    
+
         // Redirect to the invoice view for printing
         return response()->view('orders.print-invoice', compact('order'))
             ->header('Content-Type', 'text/html');
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if an error occurs
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Order creation failed: ' . $e->getMessage());
+
+        // Redirect back to the order creation page with the error
+        return redirect()
+            ->route('orders.create')
+            ->with('error', 'Failed to create the order. Error: ' . $e->getMessage());
     }
+}
+
+
+
     
 
 
-    public function show(Order $order)
+   public function show(Order $order)
     {
-        $order->loadMissing(['customer', 'details'])->get();
-
-        return view('orders.show', [
-            'order' => $order,
-        ]);
+        try {
+            // Attempt to load the necessary relationships
+            $order->loadMissing(['customer', 'details']);
+    
+            // Return the view with order details
+            return view('orders.show', [
+                'order' => $order,
+                'error' => null, // No errors occurred
+            ]);
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            \Log::error('Error retrieving order details: ' . $e->getMessage());
+    
+            // Return the view with the error message
+            return view('orders.show', [
+                'order' => null, // No valid order data
+                'error' => $e->getMessage(), // Pass the error message to the view
+            ]);
+        }
     }
+
 
     public function update(Order $order, Request $request)
     {

@@ -133,6 +133,10 @@
                                 </td>
                                 <td class="text-center">{{ number_format($order->pay, 2) }}</td>
                             </tr>
+                                <tr>
+                                <td colspan="6" class="text-end">Discount</td>
+                                <td class="text-center">{{ number_format($order->discount, 2) }}</td>
+                            </tr>
                             <tr>
                                 <td colspan="6" class="text-end">Due</td>
                                 <td class="text-center">{{ number_format($order->due, 2) }}</td>
@@ -143,7 +147,7 @@
                             </tr>
                             <tr>
                                 <td colspan="6" class="text-end">Total</td>
-                                <td class="text-center">{{ number_format($order->total, 2) }}</td>
+                                <td class="text-center">{{ number_format($order->pay, 2) }}</td>
                             </tr>
                             </tbody>
                         </table>

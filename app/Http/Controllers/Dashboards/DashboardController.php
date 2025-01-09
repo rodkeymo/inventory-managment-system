@@ -16,7 +16,11 @@ class DashboardController extends Controller
     {
         $orders = Order::count();
         $completedOrders = Order::where('order_status', OrderStatus::COMPLETE)
+            ->whereDate('created_at', today())
             ->count();
+
+        $totalSalesToday = Order::whereDate('created_at', today())
+            ->sum('pay');
 
         $products = Product::count();
 
@@ -40,6 +44,7 @@ class DashboardController extends Controller
             'completedOrders' => $completedOrders,
             'purchases' => $purchases,
             'todayPurchases' => $todayPurchases,
+            'totalSalesToday' => $totalSalesToday,
             'categories' => $categories,
             'quotations' => $quotations,
             'todayQuotations' => $todayQuotations,

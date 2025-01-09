@@ -20,26 +20,27 @@ class OrderStoreRequest extends FormRequest
         return [
             'customer_id' => 'required',
             'payment_type' => 'required',
-            'pay' => 'required|numeric',
         ];
     }
 
     public function prepareForValidation(): void
-    {
-        $this->merge([
-            'order_date' => Carbon::now()->format('Y-m-d'),
-            'order_status' => OrderStatus::PENDING->value,
-            'total_products' => Cart::instance('order')->count(),
-            'sub_total' => Cart::instance('order')->subtotal(),
-            'vat' => Cart::instance('order')->tax(),
-            'total' => Cart::instance('order')->total(),
-            'invoice_no' => IdGenerator::generate([
-                'table' => 'orders',
-                'field' => 'invoice_no',
-                'length' => 10,
-                'prefix' => 'INV-',
-            ]),
-            'due' => (Cart::instance('order')->total() - $this->pay),
-        ]);
-    }
+{
+    $cartTotal = Cart::instance('order')->total(); // Total from the cart
+
+    $this->merge([
+        'order_date' => Carbon::now()->format('Y-m-d'),
+        'order_status' => OrderStatus::PENDING->value,
+        'total_products' => Cart::instance('order')->count(),
+        'sub_total' => Cart::instance('order')->subtotal(),
+        'vat' => Cart::instance('order')->tax(),
+        'total' => $cartTotal,
+        'invoice_no' => IdGenerator::generate([
+            'table' => 'orders',
+            'field' => 'invoice_no',
+            'length' => 10,
+            'prefix' => 'INV-',
+        ]),
+        'due' => 0, 
+    ]);
+}
 }
