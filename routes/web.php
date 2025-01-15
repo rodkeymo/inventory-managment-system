@@ -78,6 +78,9 @@ Route::middleware(['auth'])->group(function () {
         //STOCK NOTIFICATION ROUTES 
         Route::get('/notifications', [StockNotificationController::class, 'index'])->name('notifications.index');
         Route::post('/notifications/{id}/read', [StockNotificationController::class, 'markAsRead'])->name('notifications.read');
+
+        //delete orders
+        Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('order.destroy');
     });
 
     // Route Products

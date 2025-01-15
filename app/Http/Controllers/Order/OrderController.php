@@ -169,9 +169,39 @@ public function store(OrderStoreRequest $request)
             ->with('success', 'Order has been completed!');
     }
 
+    
+
     public function destroy(Order $order)
     {
-        $order->delete();
+        try {
+            DB::beginTransaction();
+
+            // First delete all related order details
+            foreach ($order->details as $detail) {
+                // Restore product quantities
+                Product::where('id', $detail->product_id)
+                    ->increment('quantity', $detail->quantity);
+                
+                // Delete the detail
+                $detail->delete();
+            }
+
+            // Then delete the order
+            $order->delete();
+
+            DB::commit();
+
+            return redirect()
+                ->route('orders.index')
+                ->with('success', 'Order has been deleted successfully!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()
+                ->route('orders.index')
+                ->with('error', 'Failed to delete order: ' . $e->getMessage());
+        }
     }
 
     public function downloadInvoice($order)
