@@ -1,67 +1,67 @@
 name: Deploy Laravel to cPanel
-
 on:
   push:
-    branches: [ master ]  # Replace 'master' with your branch name if needed
+    branches: [ master ]  
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the code
       - uses: actions/checkout@v3
-
-      # Step 2: Setup PHP
+      
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-
-      # Step 3: Setup Node.js
-      - name: Setup Node.js
+          
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-
-      # Step 4: Install Node Dependencies
+          
       - name: Install Node Dependencies
         run: |
           npm install
           npm run build
-
-      # Step 5: Install Composer Dependencies
+          
+      - name: Setup Environment File
+        run: |
+          cp .env.example .env
+          
       - name: Install Composer Dependencies
         run: |
           composer require kyslik/column-sortable
           composer install --no-dev --optimize-autoloader --no-scripts
           composer run-script post-autoload-dump --no-dev
-
-      # Step 6: Generate Laravel Environment
-      - name: Setup Environment
+          
+      - name: Clear Laravel Cache
         run: |
-          cp .env.example .env
-          php artisan key:generate --force
           php artisan config:clear
           php artisan cache:clear
-
-      # Step 7: Prepare Deployment Directory
+          php artisan view:clear
+          php artisan route:clear
+          
+      - name: Generate Key
+        run: php artisan key:generate --force
+        
       - name: Prepare Deployment Files
         run: |
           mkdir -p deploy/demo
-          cp -r app artisan bootstrap config database lang resources routes storage tests vendor composer.json composer.lock public .env deploy/demo/
-
-      # Step 8: Install LFTP
-      - name: Install LFTP
-        run: sudo apt-get install -y lftp
-
-      # Step 9: Deploy with LFTP
-      - name: Deploy to cPanel with LFTP
-        env:
-          FTP_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          lftp -c
-          set ftp:ssl-allow no;
-          open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_SERVER;
-          mirror -R --delete --verbose ./deploy/demo/ /remote-folder/"
+          rsync -av --progress ./ deploy/demo/ \
+          --exclude=node_modules \
+          --exclude=vendor \
+          --exclude=deploy \
+          --exclude=storage/framework/cache/data \
+          --exclude=storage/logs \
+          --exclude=tests \
+          --exclude=.git \
+          --exclude=.github
+          chmod -R 775 deploy/demo/storage deploy/demo/bootstrap/cache
+      - name: FTP Deploy All Files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/demo/
+          server-dir: ./demo/
