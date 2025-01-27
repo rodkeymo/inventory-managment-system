@@ -1,7 +1,8 @@
 name: Deploy Laravel to cPanel
+
 on:
   push:
-    branches: [ main ]  # Adjust this to your main branch name
+    branches: [ master ]
 
 jobs:
   deploy:
@@ -14,15 +15,30 @@ jobs:
         with:
           php-version: '8.2'
           
-      - name: Install Dependencies
+      - uses: actions/checkout@v3
+
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+        
+      - name: Install PHP Dependencies
         run: |
           composer install --no-dev --optimize-autoloader
           php artisan config:clear
           php artisan cache:clear
           
-      - name: Generate key
+      - name: Generate Laravel Key
         run: php artisan key:generate --force
-        
+
+      - name: Install Node.js and NPM Dependencies
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # You can change the version as needed
+
+      - name: Install Node.js Dependencies
+        run: |
+          npm install
+          npm run build  # Run the build for production (optional, based on your Laravel setup)
+
       - name: Directory Preparation
         run: |
           mkdir deploy
