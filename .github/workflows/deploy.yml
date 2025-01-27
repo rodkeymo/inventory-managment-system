@@ -1,35 +1,54 @@
 name: Deploy Laravel to cPanel
 on:
   push:
-    branches: [ master ]  # Adjust this to your main branch name
+    branches: [ master ]  
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
+      - uses: actions/checkout@v3
+      
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-
+          
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          
+      - name: Install Node Dependencies
+        run: |
+          npm install
+          npm run build
+          
+      - name: Setup Environment File
+        run: |
+          cp .env.example .env
+          
       - name: Install Composer Dependencies
         run: |
-          composer install --no-dev --optimize-autoloader
-          # Clear cache and optimize
+          # Install the column-sortable package first
+          composer require kyslik/column-sortable
+          
+          # Then install remaining dependencies
+          composer install --no-dev --optimize-autoloader --no-scripts
+          
+          # Run post-install scripts separately to catch any errors
+          composer run-script post-autoload-dump --no-dev
+          
+      - name: Clear Laravel Cache
+        run: |
           php artisan config:clear
           php artisan cache:clear
-          php artisan package:discover --ansi
-
-      - name: Copy .env
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-
-      - name: Generate Laravel Application Key
+          php artisan view:clear
+          php artisan route:clear
+          
+      - name: Generate key
         run: php artisan key:generate --force
-
+        
       - name: Directory Preparation
         run: |
           mkdir -p deploy/demo/demo.nopalcactus.co.ke
