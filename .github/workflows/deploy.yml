@@ -30,13 +30,8 @@ jobs:
           
       - name: Install Composer Dependencies
         run: |
-          # Install the column-sortable package first
           composer require kyslik/column-sortable
-          
-          # Then install remaining dependencies
           composer install --no-dev --optimize-autoloader --no-scripts
-          
-          # Run post-install scripts separately to catch any errors
           composer run-script post-autoload-dump --no-dev
           
       - name: Clear Laravel Cache
@@ -46,19 +41,21 @@ jobs:
           php artisan view:clear
           php artisan route:clear
           
-      - name: Generate key
+      - name: Generate Key
         run: php artisan key:generate --force
         
       - name: Prepare Deployment Files
         run: |
           mkdir -p deploy/demo
-          cp -r . deploy/demo/  # Copy all files and folders into the deploy/demo directory
-          
-          # Optionally remove unnecessary files from the deployment package
-          rm -rf deploy/demo/node_modules
-          rm -rf deploy/demo/storage/framework/cache/data/*
-          rm -rf deploy/demo/storage/logs/*
-          rm -rf deploy/demo/tests
+          rsync -av --progress ./ deploy/demo/ \
+          --exclude=node_modules \
+          --exclude=deploy \
+          --exclude=storage/framework/cache/data \
+          --exclude=storage/logs \
+          --exclude=tests \
+          --exclude=.git \
+          --exclude=.github
+          chmod -R 775 deploy/demo/storage deploy/demo/bootstrap/cache
 
       - name: FTP Deploy All Files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
