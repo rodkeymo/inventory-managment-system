@@ -1,66 +1,41 @@
 name: Deploy Laravel to cPanel
-
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]  # Adjust this to your main branch name
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          
-      - uses: actions/checkout@v3
+
+      - name: Install Composer Dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader
+          # Clear cache and optimize
+          php artisan config:clear
+          php artisan cache:clear
+          php artisan package:discover --ansi
 
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-        
-      - name: Install PHP Dependencies
-        run: |
-          composer install --no-dev --optimize-autoloader
-          php artisan config:clear
-          php artisan cache:clear
-          
-      - name: Generate Laravel Key
+
+      - name: Generate Laravel Application Key
         run: php artisan key:generate --force
-
-      - name: Install Node.js and NPM Dependencies
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'  # You can change the version as needed
-
-      - name: Install Node.js Dependencies
-        run: |
-          npm install
-          npm run build  # Run the build for production (optional, based on your Laravel setup)
 
       - name: Directory Preparation
         run: |
-          mkdir deploy
-          mkdir deploy/demo
-          mkdir deploy/demo.nopalcactus.co.ke
-          
-          # Move Laravel files to demo directory
+          mkdir -p deploy/demo/demo.nopalcactus.co.ke
           cp -r app artisan bootstrap config database lang resources routes storage tests vendor composer.json composer.lock .env.example deploy/demo/
-          
-          # Move public files to demo.nopalcactus.co.ke directory with the structure shown
-          cp -r public/* deploy/demo.nopalcactus.co.ke/
-          mkdir -p deploy/demo.nopalcactus.co.ke/well-known
-          mkdir -p deploy/demo.nopalcactus.co.ke/assets
-          mkdir -p deploy/demo.nopalcactus.co.ke/cgi-bin
-          mkdir -p deploy/demo.nopalcactus.co.ke/dist
-          mkdir -p deploy/demo.nopalcactus.co.ke/static
-          mkdir -p deploy/demo.nopalcactus.co.ke/vendor
-          
-          # Update index.php to point to the correct directory structure (same level)
-          sed -i 's|/../vendor/autoload.php|/../demo/vendor/autoload.php|g' deploy/demo.nopalcactus.co.ke/index.php
-          sed -i 's|/../bootstrap/app.php|/../demo/bootstrap/app.php|g' deploy/demo.nopalcactus.co.ke/index.php
-          
+          cp -r public/* deploy/demo/demo.nopalcactus.co.ke/
+
       - name: FTP Deploy Laravel Files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -69,7 +44,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./deploy/demo/
           server-dir: ./demo/
-          
+
       - name: FTP Deploy Public Files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
