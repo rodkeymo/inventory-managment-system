@@ -169,8 +169,6 @@ public function store(OrderStoreRequest $request)
             ->with('success', 'Order has been completed!');
     }
 
-    
-
     public function destroy(Order $order)
     {
         try {

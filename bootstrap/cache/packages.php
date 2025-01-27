@@ -1,24 +1,24 @@
 <?php return array (
   'anayarojo/shoppingcart' => 
   array (
-    'aliases' => 
-    array (
-      'Cart' => 'Gloudemans\\Shoppingcart\\Facades\\Cart',
-    ),
     'providers' => 
     array (
       0 => 'Gloudemans\\Shoppingcart\\ShoppingcartServiceProvider',
     ),
+    'aliases' => 
+    array (
+      'Cart' => 'Gloudemans\\Shoppingcart\\Facades\\Cart',
+    ),
   ),
   'barryvdh/laravel-debugbar' => 
   array (
-    'aliases' => 
-    array (
-      'Debugbar' => 'Barryvdh\\Debugbar\\Facades\\Debugbar',
-    ),
     'providers' => 
     array (
       0 => 'Barryvdh\\Debugbar\\ServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Debugbar' => 'Barryvdh\\Debugbar\\Facades\\Debugbar',
     ),
   ),
   'beyondcode/laravel-query-detector' => 
@@ -51,13 +51,13 @@
   ),
   'intervention/image' => 
   array (
-    'aliases' => 
-    array (
-      'Image' => 'Intervention\\Image\\Facades\\Image',
-    ),
     'providers' => 
     array (
       0 => 'Intervention\\Image\\ImageServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Image' => 'Intervention\\Image\\Facades\\Image',
     ),
   ),
   'kyslik/column-sortable' => 
@@ -97,35 +97,35 @@
   ),
   'laravolt/avatar' => 
   array (
-    'aliases' => 
-    array (
-      'Avatar' => 'Laravolt\\Avatar\\Facade',
-    ),
     'providers' => 
     array (
       0 => 'Laravolt\\Avatar\\ServiceProvider',
     ),
+    'aliases' => 
+    array (
+      'Avatar' => 'Laravolt\\Avatar\\Facade',
+    ),
   ),
   'livewire/livewire' => 
   array (
-    'aliases' => 
-    array (
-      'Livewire' => 'Livewire\\Livewire',
-    ),
     'providers' => 
     array (
       0 => 'Livewire\\LivewireServiceProvider',
     ),
+    'aliases' => 
+    array (
+      'Livewire' => 'Livewire\\Livewire',
+    ),
   ),
   'mimisk13/laravel-tabler' => 
   array (
-    'aliases' => 
-    array (
-      'LaravelTabler' => 'MimisK13\\LaravelTabler\\Facades\\LaravelTabler',
-    ),
     'providers' => 
     array (
       0 => 'MimisK13\\LaravelTabler\\LaravelTablerServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'LaravelTabler' => 'MimisK13\\LaravelTabler\\Facades\\LaravelTabler',
     ),
   ),
   'nesbot/carbon' => 
@@ -165,13 +165,13 @@
   ),
   'spatie/laravel-ignition' => 
   array (
-    'aliases' => 
-    array (
-      'Flare' => 'Spatie\\LaravelIgnition\\Facades\\Flare',
-    ),
     'providers' => 
     array (
       0 => 'Spatie\\LaravelIgnition\\IgnitionServiceProvider',
+    ),
+    'aliases' => 
+    array (
+      'Flare' => 'Spatie\\LaravelIgnition\\Facades\\Flare',
     ),
   ),
 );

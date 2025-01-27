@@ -1,5 +1,6 @@
 @extends('layouts.tabler')
 
+
 @section('content')
     <div class="page-header d-print-none">
         <div class="container-xl">
@@ -101,27 +102,6 @@
                                 <div class="card-body">
                                     <div class="row align-items-center">
                                         <div class="col-auto">
-                                    <span class="bg-twitter text-white avatar"><!-- Download SVG icon from http://tabler-icons.io/i/brand-twitter -->
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-truck-delivery" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-4m-1 -8h11v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" /><path d="M3 9l4 0" /></svg>
-                                    </span>
-                                        </div>
-                                        <div class="col">
-                                            <div class="font-weight-medium">
-                                                Sales Today
-                                            </div>
-                                            <div class="text-muted">
-                                                Ksh. {{ $totalSalesToday }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card card-sm">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
                                             <span class="bg-facebook text-white avatar"><!-- Download SVG icon from http://tabler-icons.io/i/brand-facebook -->
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-files" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M15 3v4a1 1 0 0 0 1 1h4" /><path d="M18 17h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h4l5 5v7a2 2 0 0 1 -2 2z" /><path d="M16 17v2a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h2" /></svg>
                                             </span>
@@ -159,10 +139,78 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-start">
+                                        <div class="col-auto">
+                                            <div class="d-flex align-items-center">
+                                                <div class="dropdown ms-auto">
+                                                    <button
+                                                        class="btn btn-sm btn-light dropdown-toggle"
+                                                        type="button"
+                                                        id="salesFilterDropdown"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        Today
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="salesFilterDropdown">
+                                                        <li><a class="dropdown-item" href="#" data-value="today">Today</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-value="last7days">Last 7 days</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-value="last30days">Last 30 days</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col text-end">
+                                            <div class="subheader">Sales</div>
+                                            <div class="h2" style="color: #28a745;" id="salesValue">KSh. {{ $totalSalesToday }}</div>
+                                            <div class="text-muted">Conversion rate</div>
+                                            <div class="progress mt-2" style="height: 5px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 7%;" aria-valuenow="7" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card card-sm">
+                                <div class="card-body">
+                                    <div class="row align-items-start">
+                                        <div class="col-auto">
+                                            <div class="d-flex align-items-center">
+                                                <div class="dropdown ms-auto">
+                                                    <button
+                                                        class="btn btn-sm btn-light dropdown-toggle"
+                                                        type="button"
+                                                        id="profitFilterDropdown"
+                                                        data-bs-toggle="dropdown"
+                                                        aria-expanded="false">
+                                                        Today
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profitFilterDropdown">
+                                                        <li><a class="dropdown-item" href="#" data-value="today">Today</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-value="last7days">Last 7 days</a></li>
+                                                        <li><a class="dropdown-item" href="#" data-value="last30days">Last 30 days</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col text-end">
+                                            <div class="subheader">Profits</div>
+                                            <div class="h2" style="color: #28a745;" id="profitValue">KSh. {{ $dailyProfits }}</div>
+                                            <div class="text-muted">Conversion rate</div>
+                                            <div class="progress mt-2" style="height: 5px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 7%;" aria-valuenow="7" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-
             </div>
                 <div class="container container-xl mt-4">
                     <x-alert/>
@@ -181,6 +229,8 @@
 @endpush
 
 @pushonce('page-scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         // @formatter:off
         document.addEventListener("DOMContentLoaded", function () {
@@ -371,5 +421,62 @@
             })).render();
         });
         // @formatter:on
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownItems = document.querySelectorAll('#salesFilterDropdown + .dropdown-menu .dropdown-item');
+            const salesValueElement = document.getElementById('salesValue');
+            const dropdownButton = document.getElementById('salesFilterDropdown');
+        
+            const totalSalesToday = "{{ $totalSalesToday }}";
+            const totalSalesWeekly = "{{ $totalSalesWeekly }}";
+            const totalSalesMonthly = "{{ $totalSalesMonthly }}";
+        
+            dropdownItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const value = this.getAttribute('data-value');
+                    let salesValue = totalSalesToday;
+        
+                    if (value === 'last7days') {
+                        salesValue = totalSalesWeekly;
+                    } else if (value === 'last30days') {
+                        salesValue = totalSalesMonthly;
+                    }
+        
+                    salesValueElement.textContent = `KSh. ${salesValue}`;
+                    dropdownButton.textContent = this.textContent;
+                });
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownItems = document.querySelectorAll('#profitFilterDropdown + .dropdown-menu .dropdown-item');
+            const profitValueElement = document.getElementById('profitValue');
+            const dropdownButton = document.getElementById('profitFilterDropdown');
+        
+            const totalProfitToday = "{{ $dailyProfits }}";
+            const totalProfitWeekly = "{{ $weeklyProfits }}";
+            const totalProfitMonthly = "{{ $monthlyProfits }}";
+        
+            dropdownItems.forEach(item => {
+                item.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const value = this.getAttribute('data-value');
+                    let profitValue = totalProfitToday;
+        
+                    if (value === 'last7days') {
+                        profitValue = totalProfitWeekly;
+                    } else if (value === 'last30days') {
+                        profitValue = totalProfitMonthly;
+                    }
+        
+                    profitValueElement.textContent = `KSh. ${profitValue}`;
+                    dropdownButton.textContent = this.textContent;
+                });
+            });
+        });
+
     </script>
+    
+
 @endpushonce

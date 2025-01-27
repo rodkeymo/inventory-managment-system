@@ -1,0 +1,64 @@
+name: Deploy Laravel to cPanel
+on:
+  push:
+    branches: [ main ]  # Adjust this to your main branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          
+      - name: Install Dependencies
+        run: |
+          composer install --no-dev --optimize-autoloader
+          php artisan config:clear
+          php artisan cache:clear
+          
+      - name: Generate key
+        run: php artisan key:generate --force
+        
+      - name: Directory Preparation
+        run: |
+          mkdir deploy
+          mkdir deploy/demo
+          mkdir deploy/demo.nopalcactus.co.ke
+          
+          # Move Laravel files to demo directory
+          cp -r app artisan bootstrap config database lang resources routes storage tests vendor composer.json composer.lock .env.example deploy/demo/
+          
+          # Move public files to demo.nopalcactus.co.ke directory with the structure shown
+          cp -r public/* deploy/demo.nopalcactus.co.ke/
+          mkdir -p deploy/demo.nopalcactus.co.ke/well-known
+          mkdir -p deploy/demo.nopalcactus.co.ke/assets
+          mkdir -p deploy/demo.nopalcactus.co.ke/cgi-bin
+          mkdir -p deploy/demo.nopalcactus.co.ke/dist
+          mkdir -p deploy/demo.nopalcactus.co.ke/static
+          mkdir -p deploy/demo.nopalcactus.co.ke/vendor
+          
+          # Update index.php to point to the correct directory structure (same level)
+          sed -i 's|/../vendor/autoload.php|/../demo/vendor/autoload.php|g' deploy/demo.nopalcactus.co.ke/index.php
+          sed -i 's|/../bootstrap/app.php|/../demo/bootstrap/app.php|g' deploy/demo.nopalcactus.co.ke/index.php
+          
+      - name: FTP Deploy Laravel Files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/demo/
+          server-dir: ./demo/
+          
+      - name: FTP Deploy Public Files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/demo.nopalcactus.co.ke/
+          server-dir: ./demo.nopalcactus.co.ke/

@@ -28,25 +28,50 @@
                 <td class="align-middle">
                     @if($invoiceProduct['is_saved'])
                         <input type="hidden" name="invoiceProducts[{{$index}}][product_id]" value="{{ $invoiceProduct['product_id'] }}">
-
                         {{ $invoiceProduct['product_name'] }}
                     @else
-
-                        <select wire:model.live="invoiceProducts.{{$index}}.product_id"
+                        <!-- Search Field -->
+                        <div 
+                            class="ms-auto text-secondary"
+                            style="position: relative; width: 100%;>
+                            <div class="ms-2 d-inline-block">
+                                <!-- Livewire search binding -->
+                                
+                                <input type="text" 
+                                    wire:model.live="search_{{$index}}" 
+                                    id="search-input-{{$index}}" 
+                                    class="form-control mb-3 form-control-sm" 
+                                    aria-label="Search product" 
+                                    placeholder="Search product"
+                                    oninput="filterOptions({{$index}})"
+                                    style="width: 100%; box-sizing: border-box;"
+                                    onfocus="showDropdown({{$index}})" 
+                                />
+                            </div>
+                        </div>
+                
+                        <!-- Dropdown -->
+                        <div style="position: relative;">
+                            <select 
+                                wire:model.live="invoiceProducts.{{$index}}.product_id"
                                 id="invoiceProducts[{{$index}}][product_id]"
                                 class="form-control text-center @error('invoiceProducts.' . $index . '.product_id') is-invalid @enderror"
-                        >
-
-                            <option value="" class="text-center">-- choose product --</option>
-
-                            @foreach ($allProducts as $product)
-                                <option value="{{ $product->id }}" class="text-center">
-                                    {{ $product->name }}
-{{--                                    (${{ number_format($product->selling_price, 2) }})--}}
-                                </option>
-                            @endforeach
-                        </select>
-
+                                size="5"
+                                onchange="updateSearchInput({{$index}})"
+                                 style="width: 100%; box-sizing: border-box; position: absolute; top: 100%; z-index: 10; display: none;"
+                            >
+                                <option value="" class="text-center">-- choose product --</option>
+                                @foreach ($allProducts as $product)
+                                    <option 
+                                        value="{{ $product->id }}" 
+                                        class="text-center"
+                                        data-name="{{ $product->name }}">
+                                        {{ $product->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                
                         @error('invoiceProducts.' . $index)
                             <em class="text-danger">
                                 {{ $message }}
@@ -158,3 +183,59 @@
         </tbody>
     </table>
 </div>
+<script>
+    // Filter dropdown options based on search input
+    function filterOptions(index) {
+        // Get the search input and dropdown
+        const searchInput = document.getElementById(`search-input-${index}`);
+        const dropdown = document.getElementById(`invoiceProducts[${index}][product_id]`);
+        
+        const filter = searchInput.value.toLowerCase().trim(); // Get search value, make lowercase and trim whitespace
+        const options = dropdown.options;
+    
+        // Loop through all options and filter based on search input
+        for (let i = 0; i < options.length; i++) {
+            const option = options[i];
+            const optionText = option.dataset.name ? option.dataset.name.toLowerCase() : option.text.toLowerCase();
+    
+            // Show or hide the option based on whether the option text includes the filter
+            if (optionText.includes(filter)) {
+                option.style.display = ''; // Show option
+            } else {
+                option.style.display = 'none'; // Hide option
+            }
+        }
+            // Show the dropdown if there are matching options, otherwise hide it
+        const anyVisibleOption = Array.from(options).some(option => option.style.display !== 'none');
+        dropdown.style.display = anyVisibleOption ? '' : 'none';
+    }
+
+   // Function to update the search input with the selected option
+    function updateSearchInput(index) {
+        const dropdown = document.getElementById(`invoiceProducts[${index}}][product_id]`);
+        const selectedOption = dropdown.options[dropdown.selectedIndex];
+        
+        if (selectedOption.value) {
+            const searchInput = document.getElementById(`search-input-${index}`);
+            const selectedProductName = selectedOption.dataset.name; // Get the name of the selected product
+    
+            // Set the search input value to the selected product name
+            searchInput.value = selectedProductName;  
+    
+            // Update the Livewire search property for this row (optional: use Livewire if necessary)
+            Livewire.emit('updateSearch', index, selectedProductName); 
+    
+            // Hide the dropdown after selecting a product
+            dropdown.style.display = 'none';
+        }
+    }
+
+    // Function to show the dropdown when focusing on the search input
+    function showDropdown(index) {
+        const dropdown = document.getElementById(`invoiceProducts[${index}}][product_id]`);
+        
+        // Show the dropdown if there are options available
+        dropdown.style.display = dropdown.options.length > 1 ? '' : 'none';
+    }
+</script>
+

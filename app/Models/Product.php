@@ -74,4 +74,10 @@ class Product extends Model
         $query->where('name', 'like', "%{$value}%")
             ->orWhere('code', 'like', "%{$value}%");
     }
+    
+    
+    public function setQuantityAttribute($value)
+    {
+        $this->attributes['quantity'] = max(0, $value);
+    }
 }
