@@ -32,7 +32,9 @@ jobs:
       # Step 5: Install Composer Dependencies
       - name: Install Composer Dependencies
         run: |
-          composer install --no-dev --optimize-autoloader
+          composer require kyslik/column-sortable
+          composer install --no-dev --optimize-autoloader --no-scripts
+          composer run-script post-autoload-dump --no-dev
 
       # Step 6: Generate Laravel Environment
       - name: Setup Environment
