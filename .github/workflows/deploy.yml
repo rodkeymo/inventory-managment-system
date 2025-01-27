@@ -49,13 +49,18 @@ jobs:
       - name: Generate key
         run: php artisan key:generate --force
         
-      - name: Directory Preparation
+      - name: Prepare Deployment Files
         run: |
-          mkdir -p deploy/demo/demo.nopalcactus.co.ke
-          cp -r app artisan bootstrap config database lang resources routes storage tests vendor composer.json composer.lock .env.example deploy/demo/
-          cp -r public/* deploy/demo/demo.nopalcactus.co.ke/
+          mkdir -p deploy/demo
+          cp -r . deploy/demo/  # Copy all files and folders into the deploy/demo directory
+          
+          # Optionally remove unnecessary files from the deployment package
+          rm -rf deploy/demo/node_modules
+          rm -rf deploy/demo/storage/framework/cache/data/*
+          rm -rf deploy/demo/storage/logs/*
+          rm -rf deploy/demo/tests
 
-      - name: FTP Deploy Laravel Files
+      - name: FTP Deploy All Files
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -63,12 +68,3 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./deploy/demo/
           server-dir: ./demo/
-
-      - name: FTP Deploy Public Files
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./deploy/demo.nopalcactus.co.ke/
-          server-dir: ./demo.nopalcactus.co.ke/
