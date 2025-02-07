@@ -33,10 +33,11 @@ class UserTable extends Component
     public function render()
     {
         return view('livewire.tables.user-table', [
-            'users' => User::query()
+            'users' => User::where('account_id', auth()->user()->account_id) // Filter users by account_id
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
                 ->paginate($this->perPage),
         ]);
     }
+
 }

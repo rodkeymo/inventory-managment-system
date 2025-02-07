@@ -33,11 +33,11 @@ class PurchaseTable extends Component
     public function render()
     {
         return view('livewire.tables.purchase-table', [
-            'purchases' => Purchase::query()
+            'purchases' => Purchase::where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->with('supplier')
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
                 ->paginate($this->perPage),
         ]);
-    }
+    }    
 }

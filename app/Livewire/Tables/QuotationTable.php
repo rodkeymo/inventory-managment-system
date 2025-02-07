@@ -33,11 +33,12 @@ class QuotationTable extends Component
     public function render()
     {
         return view('livewire.tables.quotation-table', [
-            'quotations' => Quotation::query()
+            'quotations' => Quotation::where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->with(['quotationDetails', 'customer'])
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
-                ->paginate(),
+                ->paginate($this->perPage),
         ]);
     }
+
 }

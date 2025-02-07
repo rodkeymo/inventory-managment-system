@@ -34,10 +34,12 @@ class OrderTable extends Component
     {
         return view('livewire.tables.order-table', [
             'orders' => Order::query()
+                ->where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->with(['customer', 'details'])
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
                 ->paginate($this->perPage),
         ]);
     }
+    
 }

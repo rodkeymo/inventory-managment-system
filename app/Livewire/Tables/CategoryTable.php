@@ -35,10 +35,11 @@ class CategoryTable extends Component
     {
         return view('livewire.tables.category-table', [
             'categories' => Category::query()
+                ->where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->with(['products'])
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
-                ->paginate($this->perPage)
+                ->paginate($this->perPage),
         ]);
     }
 }

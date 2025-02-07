@@ -33,11 +33,12 @@ class SupplierTable extends Component
     public function render()
     {
         return view('livewire.tables.supplier-table', [
-            'suppliers' => Supplier::query()
+            'suppliers' => Supplier::where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->with(['purchases'])
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
                 ->paginate($this->perPage),
         ]);
     }
+
 }

@@ -42,6 +42,7 @@ class ProductByUnitTable extends Component
     {
         return view('livewire.tables.product-by-unit-table', [
             'products' => Product::where('unit_id', $this->unit->id)
+                ->where('account_id', auth()->user()->account_id) // Filter by account_id
                 ->search($this->search)
                 ->orderBy($this->sortField, $this->sortAsc ? 'asc' : 'desc')
                 ->paginate($this->perPage)
