@@ -18,6 +18,7 @@ class QuotationDetails extends Model
         'unit_price',
         'sub_total',
         'product_discount_amount',
+        'account_id',
         'product_discount_type',
         'product_tax_amount'
     ];
@@ -78,5 +79,9 @@ class QuotationDetails extends Model
             get: fn ($value) => $value / 100,
             set: fn ($value) => $value * 100,
         );
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

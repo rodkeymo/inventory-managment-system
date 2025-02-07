@@ -10,15 +10,16 @@ class UnitController extends Controller
 {
     public function index()
     {
-        $units = Unit::query()
+        $user = auth()->user(); // Get the logged-in user
+        $units = Unit::where('account_id', $user->account_id)
             ->select(['id', 'name', 'slug', 'short_code'])
             ->get();
-
+    
         return view('units.index', [
             'units' => $units,
         ]);
     }
-
+    
     public function create()
     {
         return view('units.create');
@@ -26,7 +27,14 @@ class UnitController extends Controller
 
     public function show(Unit $unit)
     {
-        $unit->loadMissing('products')->get();
+        $user = auth()->user();
+
+        // Ensure the unit belongs to the authenticated user's account
+        if ($unit->account_id !== $user->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $unit->loadMissing('products');
 
         return view('units.show', [
             'unit' => $unit
@@ -35,12 +43,13 @@ class UnitController extends Controller
 
     public function store(StoreUnitRequest $request)
     {
-        Unit::create($request->validated());
+        Unit::create(array_merge($request->validated(), ['account_id' => auth()->user()->account_id]));
 
         return redirect()
             ->route('units.index')
             ->with('success', 'Unit has been created!');
     }
+
 
     public function edit(Unit $unit)
     {
@@ -51,6 +60,12 @@ class UnitController extends Controller
 
     public function update(UpdateUnitRequest $request, Unit $unit)
     {
+        $user = auth()->user();
+
+        if ($unit->account_id !== $user->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $unit->update($request->all());
 
         return redirect()
@@ -58,12 +73,20 @@ class UnitController extends Controller
             ->with('success', 'Unit has been updated!');
     }
 
+
     public function destroy(Unit $unit)
     {
+        $user = auth()->user();
+    
+        if ($unit->account_id !== $user->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+    
         $unit->delete();
-
+    
         return redirect()
             ->route('units.index')
             ->with('success', 'Unit has been deleted!');
     }
+    
 }

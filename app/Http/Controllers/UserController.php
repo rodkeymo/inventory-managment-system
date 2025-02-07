@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 
@@ -12,8 +13,10 @@ class UserController extends Controller
 {
     public function index()
     {
-        // Fetch all users with their roles in one query
-        $users = User::with('role')->get();
+        // Fetch users only within the same account as the logged-in user
+        $users = User::where('account_id', auth()->user()->account_id)
+            ->with('role')
+            ->get();
 
         return view('users.index', compact('users'));
     }
@@ -25,24 +28,23 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request)
     {
+        $accountId = auth()->user()->account_id; // Ensure new user belongs to the same account
+
         $user = User::create([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'account_id' => $accountId, // Assign the same account ID
         ]);
 
-        /**
-         * Handle upload an image
-         */
-        if($request->hasFile('photo')){
+        // Handle image upload
+        if ($request->hasFile('photo')) {
             $file = $request->file('photo');
-            $filename = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
-
+            $filename = hexdec(uniqid()) . '.' . $file->getClientOriginalExtension();
             $file->storeAs('profile/', $filename, 'public');
-            $user->update([
-                'photo' => $filename
-            ]);
+
+            $user->update(['photo' => $filename]);
         }
 
         return redirect()
@@ -52,48 +54,47 @@ class UserController extends Controller
 
     public function show(User $user)
     {
-        return view('users.show', [
-            'user' => $user
-        ]);
+        // Restrict access to users within the same account
+        if ($user->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
-        return view('users.edit', [
-            'user' => $user
-        ]);
+        // Restrict access to users within the same account
+        if ($user->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return view('users.edit', compact('user'));
     }
 
     public function update(UpdateUserRequest $request, User $user)
     {
-
-//        if ($validatedData['email'] != $user->email) {
-//            $validatedData['email_verified_at'] = null;
-//        }
+        // Restrict access to users within the same account
+        if ($user->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $user->update($request->except('photo'));
 
-        /**
-         * Handle upload image with Storage.
-         */
-        if($request->hasFile('photo')){
-
-            // Delete Old Photo
-            if($user->photo){
-                unlink(public_path('storage/profile/') . $user->photo);
+        // Handle image upload
+        if ($request->hasFile('photo')) {
+            // Delete Old Photo if it exists
+            if ($user->photo) {
+                Storage::disk('public')->delete('profile/' . $user->photo);
             }
 
-            // Prepare New Photo
+            // Store New Photo
             $file = $request->file('photo');
-            $fileName = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
-
-            // Store an image to Storage
+            $fileName = hexdec(uniqid()) . '.' . $file->getClientOriginalExtension();
             $file->storeAs('profile/', $fileName, 'public');
 
-            // Save DB
-            $user->update([
-                'photo' => $fileName
-            ]);
+            // Update user record
+            $user->update(['photo' => $fileName]);
         }
 
         return redirect()
@@ -103,36 +104,40 @@ class UserController extends Controller
 
     public function updatePassword(Request $request, String $username)
     {
-        # Validation
         $validated = $request->validate([
-            'password' => 'required_with:password_confirmation|min:6',
-            'password_confirmation' => 'same:password|min:6',
+            'password' => 'required|min:6|confirmed',
         ]);
 
-        # Update the new Password
-        User::where('username', $username)->update([
+        // Find the user and ensure they belong to the same account
+        $user = User::where('username', $username)
+            ->where('account_id', auth()->user()->account_id)
+            ->firstOrFail();
+
+        $user->update([
             'password' => Hash::make($validated['password'])
         ]);
 
         return redirect()
             ->route('users.index')
-            ->with('success', 'User has been updated!');
+            ->with('success', 'User password has been updated!');
     }
 
     public function destroy(User $user)
     {
-        // Check if the user has a photo
-        if ($user->photo && file_exists(public_path('storage/profile/') . $user->photo)) {
-            // Delete the photo
-            unlink(public_path('storage/profile/') . $user->photo);
+        // Restrict access to users within the same account
+        if ($user->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
         }
-    
+
+        // Delete User Photo
+        if ($user->photo) {
+            Storage::disk('public')->delete('profile/' . $user->photo);
+        }
+
         $user->delete();
-    
-        // Redirect with success message
+
         return redirect()
             ->route('users.index')
             ->with('success', 'User has been deleted!');
     }
-    
 }

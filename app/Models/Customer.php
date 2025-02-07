@@ -22,6 +22,7 @@ class Customer extends Model
         'photo',
         'account_holder',
         'account_number',
+        'account_id',
         'bank_name',
     ];
 
@@ -45,5 +46,9 @@ class Customer extends Model
         $query->where('name', 'like', "%{$value}%")
             ->orWhere('email', 'like', "%{$value}%")
             ->orWhere('phone', 'like', "%{$value}%");
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

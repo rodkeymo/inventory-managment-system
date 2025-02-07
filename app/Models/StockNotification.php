@@ -13,6 +13,7 @@ class StockNotification extends Model
         'product_id',
         'product_name',
         'current_quantity',
+        'account_id',
         'alert_threshold',
         'read',
     ];
@@ -20,5 +21,9 @@ class StockNotification extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

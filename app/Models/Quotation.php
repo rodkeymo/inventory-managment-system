@@ -20,6 +20,7 @@ class Quotation extends Model
         'discount_percentage',
         'discount_amount',
         'shipping_amount',
+        'account_id',
         'total_amount',
         'status',
         'note',
@@ -92,5 +93,9 @@ class Quotation extends Model
         $query->where('reference', 'like', "%{$value}%")
             ->orWhere('customer_name', 'like', "%{$value}%")
             ->orWhere('status', 'like', "%{$value}%");
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

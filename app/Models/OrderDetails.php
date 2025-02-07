@@ -16,9 +16,13 @@ class OrderDetails extends Model
         'product_id',
         'quantity',
         'unitcost',
+        'account_id',
         'total',
     ];
-
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

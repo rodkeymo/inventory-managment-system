@@ -17,14 +17,20 @@ class Category extends Model
     protected $fillable = [
         'name',
         'slug',
-        'short_code'
+        'short_code',
+        'account_id',
+
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+    
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'category_id', 'id');

@@ -26,6 +26,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         // Other middlewares...
         'role' => \App\Http\Middleware\RoleMiddleware::class,
+        'account.restrict' => \App\Http\Middleware\EnsureUserBelongsToAccount::class,
     ];
     
 

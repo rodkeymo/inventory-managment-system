@@ -17,7 +17,8 @@ class Unit extends Model
     protected $fillable = [
         'name',
         'slug',
-        'short_code'
+        'short_code',
+        'account_id',
     ];
 
     protected $casts = [
@@ -40,5 +41,9 @@ class Unit extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

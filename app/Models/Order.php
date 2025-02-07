@@ -15,7 +15,10 @@ class Order extends Model
     protected $guarded = [
         'id',
     ];
-
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
     protected $fillable = [
         'customer_id',
         'order_date',
@@ -26,6 +29,7 @@ class Order extends Model
         'total',
         'invoice_no',
         'payment_type',
+        'account_id',
         'pay',
         'due',
     ];

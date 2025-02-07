@@ -22,6 +22,7 @@ class Purchase extends Model
         'purchase_no',
         'status',
         'total_amount',
+        'account_id',
         'created_by',
         'updated_by',
     ];
@@ -58,5 +59,10 @@ class Purchase extends Model
         $query->where('purchase_no', 'like', "%{$value}%")
             ->orWhere('status', 'like', "%{$value}%")
         ;
+    }
+
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

@@ -26,6 +26,7 @@ class Product extends Model
         'tax_type',
         'notes',
         'product_image',
+        'account_id',
         'category_id',
         'unit_id',
         'created_at',
@@ -48,6 +49,11 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
+
     public function unit()
     {
         return $this->belongsTo(Unit::class, 'unit_id');
@@ -60,6 +66,7 @@ class Product extends Model
             set: fn ($value) => $value * 100,
         );
     }
+    
 
     protected function sellingPrice(): Attribute
     {

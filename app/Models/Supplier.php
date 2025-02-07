@@ -24,6 +24,7 @@ class Supplier extends Model
         'type',
         'photo',
         'account_holder',
+        'account_id',
         'account_number',
         'bank_name',
     ];
@@ -46,5 +47,9 @@ class Supplier extends Model
             ->orWhere('phone', 'like', "%{$value}%")
             ->orWhere('shopname', 'like', "%{$value}%")
             ->orWhere('type', 'like', "%{$value}%");
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

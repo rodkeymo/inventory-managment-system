@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Role;
+use App\Models\Account;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
-use App\Models\Role;
 
 class RegisteredUserController extends Controller
 {
@@ -33,24 +34,32 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'max:255', 'unique:' . User::class, 'alpha_dash:ascii'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'username' => ['required', 'string', 'max:255', 'unique:users,username', 'alpha_dash:ascii'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role_id' => 'required|exists:roles,name',
+            'role_id' => ['required', 'string', 'exists:roles,name'],
             'terms-of-service' => ['required']
         ]);
 
+        // Ensure only admins can register here
         $role = Role::where('name', $request->role_id)->first();
+        if (!$role || strtolower($role->name) !== 'admin') {
+            return back()->withErrors(['role_id' => 'Only Admins can register from this form.']);
+        }
+
+        // Create a new Account for the Admin
+        $account = Account::create(['name' => $request->name . "'s Account"]);
+
+        // Create the Admin User
         $user = User::create([
             'name' => $request->name,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'account_id' => $account->id, // Assign new account ID
             'role_id' => $role->id,
         ]);
-
-        event(new Registered($user));
-
+        // event(new Registered($user));
         Auth::login($user);
 
         return redirect(RouteServiceProvider::HOME);

@@ -20,6 +20,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'username',
         'email',
         'password',
+        'account_id',
         'role_id',
     ];
 
@@ -60,5 +61,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }

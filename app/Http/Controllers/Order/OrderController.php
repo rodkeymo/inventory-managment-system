@@ -16,200 +16,173 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function index()
-    {
-        $orders = Order::latest()->get();
+   public function index()
+   {
+       $user = auth()->user();
+       $orders = Order::where('account_id', $user->account_id)
+           ->latest()
+           ->get();
 
-        return view('orders.index', [
-            'orders' => $orders,
-        ]);
-    }
+       return view('orders.index', ['orders' => $orders]);
+   }
 
-    public function create()
-    {
-        Cart::instance('order')
-            ->destroy();
+   public function create()
+   {
+       $user = auth()->user();
+       Cart::instance('order')->destroy();
 
-        return view('orders.create', [
-            'carts' => Cart::content(),
-            'customers' => Customer::all(['id', 'name']),
-            'products' => Product::with(['category', 'unit'])->get(),
-        ]);
-    }
+       return view('orders.create', [
+           'carts' => Cart::content(),
+           'customers' => Customer::where('account_id', $user->account_id)
+               ->get(['id', 'name']),
+           'products' => Product::where('account_id', $user->account_id)
+               ->with(['category', 'unit'])
+               ->get(),
+       ]);
+   }
 
-public function store(OrderStoreRequest $request)
-{
-    try {
-        // Start a transaction for safety
-        DB::beginTransaction();
+   public function store(OrderStoreRequest $request)
+   {
+       try {
+           DB::beginTransaction();
+           
+           $user = auth()->user();
+           $orderData = array_merge($request->all(), ['account_id' => $user->account_id]);
+           
+           $order = Order::create($orderData);
 
-        // Create the order
-        $order = Order::create($request->all());
+           if (in_array($request->payment_type, ['Mpesa', 'Bank', 'HandCash'])) {
+               $order->order_status = 1;
+               $order->invoice_no = 'RCPT-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
+           } elseif ($request->payment_type === 'Credit') {
+               $order->invoice_no = 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
+           }
 
-        // Set the invoice number prefix based on payment type
-        if (in_array($request->payment_type, ['Mpesa', 'Bank', 'HandCash'])) {
-            $order->order_status = 1; // Default status for these payment types
-            $order->invoice_no = 'RCPT-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
-        } elseif ($request->payment_type === 'Credit') {
-            $order->invoice_no = 'INV-' . str_pad($order->id, 6, '0', STR_PAD_LEFT);
-        }
+           if ($order->due > 0) {
+               $order->order_status = 0;
+           }
 
-        // Check if due is not zero and update the order status
-        if ($order->due > 0) {
-            $order->order_status = 0; // Status 0 for orders with outstanding balances
-        }
+           $order->save();
 
-        // Save any additional changes to the order
-        $order->save();
+           $contents = Cart::instance('order')->content();
+           $oDetails = [];
 
-        // Create Order Details
-        $contents = Cart::instance('order')->content();
-        $oDetails = [];
+           foreach ($contents as $content) {
+               $soldAt = $request->input("sold_at_{$content->id}");
+               $discount = (($content->price - $soldAt) / $content->price) * 100;
 
-        foreach ($contents as $content) {
-            $soldAt = $request->input("sold_at_{$content->id}");
-            $discount = (($content->price - $soldAt) / $content->price) * 100; // Discount in percentage
+               $oDetails[] = [
+                   'order_id' => $order->id,
+                   'product_id' => $content->id,
+                   'quantity' => $content->qty,
+                   'unitcost' => $content->price,
+                   'sold_at' => $soldAt,
+                   'discount_percent' => $discount,
+                   'total' => $soldAt * $content->qty,
+                   'created_at' => Carbon::now(),
+                   'account_id' => $user->account_id
+               ];
 
-            $oDetails[] = [
-                'order_id' => $order->id,
-                'product_id' => $content->id,
-                'quantity' => $content->qty,
-                'unitcost' => $content->price,
-                'sold_at' => $soldAt,
-                'discount_percent' => $discount,
-                'total' => $soldAt * $content->qty,
-                'created_at' => Carbon::now(),
-            ];
+               $product = Product::where('account_id', $user->account_id)
+                   ->find($content->id);
+                   
+               if ($product) {
+                   $product->quantity -= $content->qty;
+                   $product->save();
+               }
+           }
 
-            // Update the product quantity after the order has been placed
-            $product = Product::find($content->id);
-            if ($product) {
-                $product->quantity -= $content->qty;
-                $product->save();
-            }
-        }
+           OrderDetails::insert($oDetails);
+           DB::commit();
+           Cart::destroy();
 
-        // Insert all order details at once for better performance
-        OrderDetails::insert($oDetails);
+           $order = $order->fresh(['customer', 'details']);
+           return response()->view('orders.print-invoice', compact('order'))
+               ->header('Content-Type', 'text/html');
 
-        // Commit the transaction
-        DB::commit();
-
-        // Reload the order with all required data (fresh ensures related data is included)
-        $order = $order->fresh(['customer', 'details']);
-
-        // Clear the cart after everything has been successfully processed
-        Cart::destroy();
-
-        // Redirect to the invoice view for printing
-        return response()->view('orders.print-invoice', compact('order'))
-            ->header('Content-Type', 'text/html');
-
-    } catch (\Exception $e) {
-        // Rollback the transaction if an error occurs
-        DB::rollBack();
-
-        // Log the error for debugging
-        \Log::error('Order creation failed: ' . $e->getMessage());
-
-        // Redirect back to the order creation page with the error
-        return redirect()
-            ->route('orders.create')
-            ->with('error', 'Failed to create the order. Error: ' . $e->getMessage());
-    }
-}
-
-
-
-    
-
+       } catch (\Exception $e) {
+           DB::rollBack();
+           \Log::error('Order creation failed: ' . $e->getMessage());
+           return redirect()
+               ->route('orders.create')
+               ->with('error', 'Failed to create order: ' . $e->getMessage());
+       }
+   }
 
    public function show(Order $order)
-    {
-        try {
-            // Attempt to load the necessary relationships
-            $order->loadMissing(['customer', 'details']);
-    
-            // Return the view with order details
-            return view('orders.show', [
-                'order' => $order,
-                'error' => null, // No errors occurred
-            ]);
-        } catch (\Exception $e) {
-            // Log the error for debugging purposes
-            \Log::error('Error retrieving order details: ' . $e->getMessage());
-    
-            // Return the view with the error message
-            return view('orders.show', [
-                'order' => null, // No valid order data
-                'error' => $e->getMessage(), // Pass the error message to the view
-            ]);
-        }
-    }
+   {
+       try {
+           $order->loadMissing(['customer', 'details']);
+           return view('orders.show', [
+               'order' => $order,
+               'error' => null
+           ]);
+       } catch (\Exception $e) {
+           \Log::error('Error retrieving order: ' . $e->getMessage());
+           return view('orders.show', [
+               'order' => null,
+               'error' => $e->getMessage()
+           ]);
+       }
+   }
 
+   public function update(Order $order, Request $request)
+   {
+       $user = auth()->user();
+       $products = OrderDetails::where('order_id', $order->id)
+           ->where('account_id', $user->account_id)
+           ->get();
 
-    public function update(Order $order, Request $request)
-    {
-        // TODO refactoring
+       foreach ($products as $product) {
+           Product::where('id', $product->product_id)
+               ->where('account_id', $user->account_id)
+               ->update(['quantity' => DB::raw('quantity-' . $product->quantity)]);
+       }
 
-        // Reduce the stock
-        $products = OrderDetails::where('order_id', $order)->get();
+       $order->update(['order_status' => OrderStatus::COMPLETE]);
 
-        foreach ($products as $product) {
-            Product::where('id', $product->product_id)
-                ->update(['quantity' => DB::raw('quantity-' . $product->quantity)]);
-        }
+       return redirect()
+           ->route('orders.complete')
+           ->with('success', 'Order completed successfully');
+   }
 
-        $order->update([
-            'order_status' => OrderStatus::COMPLETE,
-        ]);
+   public function destroy(Order $order)
+   {
+       try {
+           DB::beginTransaction();
+           $user = auth()->user();
 
-        return redirect()
-            ->route('orders.complete')
-            ->with('success', 'Order has been completed!');
-    }
+           foreach ($order->details as $detail) {
+               Product::where('id', $detail->product_id)
+                   ->where('account_id', $user->account_id)
+                   ->increment('quantity', $detail->quantity);
+                   
+               $detail->delete();
+           }
 
-    public function destroy(Order $order)
-    {
-        try {
-            DB::beginTransaction();
+           $order->delete();
+           DB::commit();
 
-            // First delete all related order details
-            foreach ($order->details as $detail) {
-                // Restore product quantities
-                Product::where('id', $detail->product_id)
-                    ->increment('quantity', $detail->quantity);
-                
-                // Delete the detail
-                $detail->delete();
-            }
+           return redirect()
+               ->route('orders.index')
+               ->with('success', 'Order deleted successfully');
 
-            // Then delete the order
-            $order->delete();
+       } catch (\Exception $e) {
+           DB::rollBack();
+           return redirect()
+               ->route('orders.index')
+               ->with('error', 'Failed to delete order: ' . $e->getMessage());
+       }
+   }
 
-            DB::commit();
+   public function downloadInvoice($order)
+   {
+       $user = auth()->user();
+       $order = Order::with(['customer', 'details'])
+           ->where('id', $order)
+           ->where('account_id', $user->account_id)
+           ->firstOrFail();
 
-            return redirect()
-                ->route('orders.index')
-                ->with('success', 'Order has been deleted successfully!');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            
-            return redirect()
-                ->route('orders.index')
-                ->with('error', 'Failed to delete order: ' . $e->getMessage());
-        }
-    }
-
-    public function downloadInvoice($order)
-    {
-        $order = Order::with(['customer', 'details'])
-            ->where('id', $order)
-            ->first();
-
-        return view('orders.print-invoice', [
-            'order' => $order,
-        ]);
-    }
+       return view('orders.print-invoice', ['order' => $order]);
+   }
 }

@@ -16,6 +16,7 @@ class PurchaseDetails extends Model
         'product_id',
         'quantity',
         'unitcost',
+        'account_id',
         'total',
     ];
 
@@ -34,5 +35,9 @@ class PurchaseDetails extends Model
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
     }
 }
