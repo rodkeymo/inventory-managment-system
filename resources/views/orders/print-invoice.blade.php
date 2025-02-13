@@ -83,7 +83,7 @@
     <div class="receipt-container">
         <!-- Header -->
         <div class="header">
-            <h1>Nopal Hardware</h1>
+            <h1>{{ $accountName }}</h1>
             <p>P.O Box 7, KUTUS</p>
             <p>0735039809</p>
         </div>

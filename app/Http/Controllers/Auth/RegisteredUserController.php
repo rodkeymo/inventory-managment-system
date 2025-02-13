@@ -36,6 +36,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', 'unique:users,username', 'alpha_dash:ascii'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'accountName' => ['required', 'string', 'max:255'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role_id' => ['required', 'string', 'exists:roles,name'],
             'terms-of-service' => ['required']
@@ -48,7 +49,7 @@ class RegisteredUserController extends Controller
         }
 
         // Create a new Account for the Admin
-        $account = Account::create(['name' => $request->name . "'s Account"]);
+        $account = Account::create(['name' => $request->accountName]);
 
         // Create the Admin User
         $user = User::create([

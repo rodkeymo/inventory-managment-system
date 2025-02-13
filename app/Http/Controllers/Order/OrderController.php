@@ -6,6 +6,7 @@ use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Order\OrderStoreRequest;
 use App\Models\Customer;
+use App\Models\Account;
 use App\Models\Order;
 use App\Models\OrderDetails;
 use App\Models\Product;
@@ -176,13 +177,24 @@ class OrderController extends Controller
    }
 
    public function downloadInvoice($order)
-   {
-       $user = auth()->user();
-       $order = Order::with(['customer', 'details'])
-           ->where('id', $order)
-           ->where('account_id', $user->account_id)
-           ->firstOrFail();
+    {
+        $accountId = Auth::user()->account_id;
+        $user = auth()->user();
 
-       return view('orders.print-invoice', ['order' => $order]);
-   }
+        // Retrieve the account name
+        $account = Account::find($accountId);
+        $accountName = $account ? $account->name : 'Unknown Account';
+
+        // Fetch the order with related customer and details
+        $order = Order::with(['customer', 'details'])
+            ->where('id', $order)
+            ->where('account_id', $user->account_id)
+            ->firstOrFail();
+
+        // Pass the account name to the view
+        return view('orders.print-invoice', [
+            'order' => $order,
+            'accountName' => $accountName
+        ]);
+    }
 }

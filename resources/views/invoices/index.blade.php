@@ -26,7 +26,7 @@
                             <div class="row">
                                 <div class="col-lg-6 col-sm-6">
                                     <div class="logo">
-                                        <h1>Nopal Hardware</h1>
+                                        <h1>{{ $accountName }}</h1>
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-sm-6">

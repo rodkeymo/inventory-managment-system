@@ -9,6 +9,8 @@
 
         <x-input name="name" :value="old('name')" placeholder="Your name" required="true"/>
 
+        <x-input name="accountName" :value="old('accountName')" placeholder="Your store name" required="true" label="Account Name"/>
+
         <x-input name="email" :value="old('email')" placeholder="your@email.com" required="true"/>
 
         <x-input name="username" :value="old('username')" placeholder="Your username" required="true"/>
