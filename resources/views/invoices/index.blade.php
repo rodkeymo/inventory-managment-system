@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Inventory</title>
+    <title></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
 
@@ -57,7 +57,7 @@
                                 </div>
                                 <div class="col-sm-6 text-end mb-50">
                                     <h4 class="inv-title-1">Store</h4>
-                                    <p class="inv-from-1">Nopal Hardware</p>
+                                    <p class="inv-from-1">{{ $customer->name }}</p>
                                     <p class="inv-from-1">0737039809</p>
                                     <p class="inv-from-2">Sagana</p>
                                 </div>

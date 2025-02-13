@@ -12,33 +12,32 @@ use Livewire\Component;
 class OrderForm extends Component
 {
     public $cart_instance;
-    private $product;
-    #[Validate('Required')]
+    public $invoice_id;
+    #[Validate('required')]
     public int $taxes = 0;
     public array $invoiceProducts = [];
     protected $listeners = ['cartUpdated' => 'render'];
     #[Validate('required', message: 'Please select products')]
     public Collection $allProducts;
 
-    public function mount($cartInstance): void
+    public function mount($cartInstance, $invoice_id = null): void
     {
         $this->cart_instance = $cartInstance;
-        $this->allProducts = Product::all();
-        $this->invoiceProducts = [];
+        $this->invoice_id = $invoice_id;
+        $this->allProducts = Product::where('account_id', auth()->user()->account_id)
+            ->orderBy('name')
+            ->get();
     }
 
     public function render(): View
     {
         $total = 0;
-
         foreach ($this->invoiceProducts as $invoiceProduct) {
             if ($invoiceProduct['is_saved'] && $invoiceProduct['product_price'] && $invoiceProduct['quantity']) {
                 $total += $invoiceProduct['product_price'] * $invoiceProduct['quantity'];
             }
         }
-
         $cart_items = Cart::instance($this->cart_instance)->content();
-
         return view('livewire.order-form', [
             'subtotal' => $total,
             'total' => $total * (1 + (is_numeric($this->taxes) ? $this->taxes : 0) / 100),
@@ -67,92 +66,97 @@ class OrderForm extends Component
     public function editProduct($index): void
     {
         foreach ($this->invoiceProducts as $key => $invoiceProduct) {
-            if (! $invoiceProduct['is_saved']) {
+            if (!$invoiceProduct['is_saved']) {
                 $this->addError('invoiceProducts.'.$key, 'This line must be saved before editing another.');
                 return;
             }
         }
 
-        $productId = $this->invoiceProducts[$index]['product_id'];
-        $cart = Cart::instance($this->cart_instance);
-        
-        // Remove the product from the cart before editing
-        $cartItem = $cart->search(fn($cartItem) => $cartItem->id === $productId);
-        if ($cartItem->isNotEmpty()) {
-            Cart::instance($this->cart_instance)->remove($cartItem->first()->rowId);
-        }
-
-        // Mark product as unsaved for editing
         $this->invoiceProducts[$index]['is_saved'] = false;
-        $this->dispatch('cartUpdated');
     }
 
     public function saveProduct($index): void
     {
         $this->resetErrorBag();
-
         $product = $this->allProducts->find($this->invoiceProducts[$index]['product_id']);
-        
-        // Remove existing product from cart if it exists
-        $cart = Cart::instance($this->cart_instance);
-        $cartItem = $cart->search(fn($cartItem) => $cartItem->id === $product->id);
-        if ($cartItem->isNotEmpty()) {
-            Cart::instance($this->cart_instance)->remove($cartItem->first()->rowId);
+        if (!$product || $product->account_id !== auth()->user()->account_id) {
+            session()->flash('error', 'Unauthorized product access.');
+            return;
         }
 
-        // Update invoice product details
         $this->invoiceProducts[$index]['product_name'] = $product->name;
         $this->invoiceProducts[$index]['product_price'] = $product->selling_price;
         $this->invoiceProducts[$index]['is_saved'] = true;
 
-        // Add to cart with new details
+        // Update cart
         $cart = Cart::instance($this->cart_instance);
-        $exists = $cart->search(function ($cartItem) use ($product) {
-            return $cartItem->id === $product->id;
-        });
+        $cartItem = $cart->search(fn($cartItem) => $cartItem->id === $product->id)->first();
 
-        if ($exists->isNotEmpty()) {
-            session()->flash('message', 'Product exists in the cart!');
-            return;
+        if ($cartItem) {
+            $cart->update($cartItem->rowId, [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->selling_price,
+                'qty' => $this->invoiceProducts[$index]['quantity'],
+                'weight' => 1,
+                'options' => [
+                    'code' => $product->code,
+                ],
+            ]);
+        } else {
+            $cart->add([
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->selling_price,
+                'qty' => $this->invoiceProducts[$index]['quantity'],
+                'weight' => 1,
+                'options' => [
+                    'code' => $product->code,
+                ],
+            ]);
         }
-
-        $cart->add([
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => $product->selling_price,
-            'qty' => $this->invoiceProducts[$index]['quantity'],
-            'weight' => 1,
-            'options' => [
-                'code' => $product->code,
-            ],
-        ]);
 
         $this->dispatch('cartUpdated');
     }
 
     public function removeProduct($index): void
     {
-        $product = $this->invoiceProducts[$index] ?? null;
-        
-        if ($product && isset($product['product_id'])) {
-            // Remove from cart
-            $cart = Cart::instance($this->cart_instance);
-            $cartItem = $cart->search(fn($cartItem) => $cartItem->id === $product['product_id']);
-            if ($cartItem->isNotEmpty()) {
-                $cart->remove($cartItem->first()->rowId);
-            }
-
-            // Handle database deletion if needed
-            if (isset($product['id'])) {
-                InvoiceProduct::where('id', $product['id'])->delete();
-            }
+        // Find the product in the allProducts collection using the product_id from invoiceProducts
+        $product = $this->allProducts->find($this->invoiceProducts[$index]['product_id']);
+    
+        // If the product is not found, flash an error message and return
+        if (!$product) {
+            session()->flash('error', 'Product not found in the invoice.');
+            return;
         }
-
-        // Remove from invoiceProducts array
-        unset($this->invoiceProducts[$index]);
-        $this->invoiceProducts = array_values($this->invoiceProducts);
-
-        session()->flash('message', 'Product removed successfully.');
+    
+        // Use the 'order' cart instance explicitly
+        $cart = Cart::instance('order');
+    
+        // Get all items in the cart before deletion
+        $cartItemsBeforeDeletion = $cart->content();
+        if ($cartItemsBeforeDeletion) {
+            session()->flash('cart_items_before', $cartItemsBeforeDeletion);
+        }
+    
+        // Perform the deletion logic
+        $cartItem = $cart->search(fn($cartItem) => $cartItem->id === $product->id)->first();
+        if ($cartItem) {
+            $cart->remove($cartItem->rowId);
+        }
+    
+        // Remove the product from the invoiceProducts array
+        array_splice($this->invoiceProducts, $index, 1);
+    
+        // Get all items in the cart after deletion
+        $cartItemsAfterDeletion = $cart->content();
+        session()->flash('cart_items_after', $cartItemsAfterDeletion);
+    
+        // Dispatch the cartUpdated event
         $this->dispatch('cartUpdated');
+    
+        // Flash a success message
+        session()->flash('message', 'Product removed successfully.');
     }
+    
 }

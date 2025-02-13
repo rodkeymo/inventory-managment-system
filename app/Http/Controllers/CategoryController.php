@@ -10,7 +10,9 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        // Fetch categories only within the same account as the logged-in user
+        $categories = Category::where('account_id', auth()->user()->account_id)
+            ->get();
 
         return view('categories.index', [
             'categories' => $categories,
@@ -24,8 +26,16 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryRequest $request)
     {
-        Category::create($request->validated());
+        // Retrieve the account_id of the authenticated user
+        $accountId = auth()->user()->account_id;
 
+        // Create the category with the validated data and the account_id
+        Category::create([
+            ...$request->validated(), // Spread the validated request data
+            'account_id' => $accountId, // Add the account_id
+        ]);
+
+        // Redirect with a success message
         return redirect()
             ->route('categories.index')
             ->with('success', 'Category has been created!');
@@ -33,6 +43,11 @@ class CategoryController extends Controller
 
     public function show(Category $category)
     {
+        // Restrict access to categories within the same account
+        if ($category->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('categories.show', [
             'category' => $category
         ]);
@@ -40,6 +55,11 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
+        // Restrict access to categories within the same account
+        if ($category->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('categories.edit', [
             'category' => $category
         ]);
@@ -47,7 +67,12 @@ class CategoryController extends Controller
 
     public function update(UpdateCategoryRequest $request, Category $category)
     {
-        $category->update($request->all());
+        // Restrict access to categories within the same account
+        if ($category->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $category->update($request->validated());
 
         return redirect()
             ->route('categories.index')
@@ -56,6 +81,11 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        // Restrict access to categories within the same account
+        if ($category->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $category->delete();
 
         return redirect()

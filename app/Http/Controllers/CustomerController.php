@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
+use Illuminate\Support\Facades\Storage;
 
 class CustomerController extends Controller
 {
     public function index()
     {
-        $customers = Customer::all();
+        // Fetch customers only within the same account as the logged-in user
+        $customers = Customer::where('account_id', auth()->user()->account_id)
+            ->get();
 
         return view('customers.index', [
             'customers' => $customers
@@ -24,15 +27,19 @@ class CustomerController extends Controller
 
     public function store(StoreCustomerRequest $request)
     {
-        $customer = Customer::create($request->all());
+        // Retrieve the account_id of the authenticated user
+        $accountId = auth()->user()->account_id;
 
-        /**
-         * Handle upload an image
-         */
-        if($request->hasFile('photo'))
-        {
+        // Create the customer with the validated data and the account_id
+        $customer = Customer::create([
+            ...$request->validated(), // Spread the validated request data
+            'account_id' => $accountId, // Add the account_id
+        ]);
+
+        // Handle upload of an image
+        if ($request->hasFile('photo')) {
             $file = $request->file('photo');
-            $filename = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $filename = hexdec(uniqid()) . '.' . $file->getClientOriginalExtension();
 
             $file->storeAs('customers/', $filename, 'public');
             $customer->update([
@@ -47,6 +54,11 @@ class CustomerController extends Controller
 
     public function show(Customer $customer)
     {
+        // Restrict access to customers within the same account
+        if ($customer->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $customer->loadMissing(['quotations', 'orders'])->get();
 
         return view('customers.show', [
@@ -56,6 +68,11 @@ class CustomerController extends Controller
 
     public function edit(Customer $customer)
     {
+        // Restrict access to customers within the same account
+        if ($customer->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         return view('customers.edit', [
             'customer' => $customer
         ]);
@@ -63,24 +80,28 @@ class CustomerController extends Controller
 
     public function update(UpdateCustomerRequest $request, Customer $customer)
     {
-        //
+        // Restrict access to customers within the same account
+        if ($customer->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
         $customer->update($request->except('photo'));
 
-        if($request->hasFile('photo')){
-
+        // Handle image upload
+        if ($request->hasFile('photo')) {
             // Delete Old Photo
-            if($customer->photo){
-                unlink(public_path('storage/customers/') . $customer->photo);
+            if ($customer->photo) {
+                Storage::disk('public')->delete('customers/' . $customer->photo);
             }
 
             // Prepare New Photo
             $file = $request->file('photo');
-            $fileName = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $fileName = hexdec(uniqid()) . '.' . $file->getClientOriginalExtension();
 
-            // Store an image to Storage
+            // Store the new image in Storage
             $file->storeAs('customers/', $fileName, 'public');
 
-            // Save DB
+            // Save the new photo to the database
             $customer->update([
                 'photo' => $fileName
             ]);
@@ -93,9 +114,14 @@ class CustomerController extends Controller
 
     public function destroy(Customer $customer)
     {
-        if($customer->photo)
-        {
-            unlink(public_path('storage/customers/') . $customer->photo);
+        // Restrict access to customers within the same account
+        if ($customer->account_id !== auth()->user()->account_id) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Delete the customer's photo if it exists
+        if ($customer->photo) {
+            Storage::disk('public')->delete('customers/' . $customer->photo);
         }
 
         $customer->delete();
